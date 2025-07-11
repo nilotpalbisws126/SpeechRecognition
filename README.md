@@ -12,7 +12,7 @@
 2. Open a terminal and navigate to the **`DigitRecognitionAssignment/`** folder.  
 3. Build and run the main program:
 
-## **************** File info****************
+## File info
 
 feature_ext.h has 3 main funtions train(), buildHMM() and testing()
 Where train() reads the training digit data and writes a file called ciFeatures.txt after calculating capstrel coefficients.
