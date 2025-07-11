@@ -1,0 +1,744 @@
+#include "stdafx.h"
+#include "stdafx.h"
+#include<iostream>
+#include<fstream>
+#include <string>
+#include<cmath>
+#include<Windows.h>
+#include "vector"
+#include <sstream>
+#include <time.h>
+#include <iomanip>
+#include <algorithm>
+
+using namespace std;
+#define M 32
+#define P 12
+#define T 180 //obervation sequence
+#define N 5
+#define no_of_training_data 20
+class HMMmodel{
+public:
+	long double pi[N];
+	long double A[N][N];
+	long double B[N][M];
+};
+
+class Codebook
+{
+public:
+	int index;
+	double ci[P];
+};
+
+class Zeta{
+public:
+	long double val[N][N];
+};
+
+
+class StateProbability{
+public:
+	long double alpha[N];
+	long double beta[N];
+	long double gamma[N];
+};
+
+vector <Codebook> codebook;
+vector <double> my_input;
+vector <double> autoCorr;
+vector <int> ObservationSeq;
+vector <StateProbability> alpha_beta;
+
+vector <double> R;
+vector <Zeta> zeta;
+vector <double> temp_input;
+int window_size = 320;
+int size;
+int corr_size;
+long int g_size;
+double alpha[P];
+long double pi[N];
+long double pi_0[N] = { 1, 0, 0, 0, 0 };
+long double A[N][N];
+long double A_0[N][N] = { { 0.8, 0.2, 0, 0, 0 }, { 0, 0.8, 0.2, 0, 0 }, { 0, 0, 0.8, 0.2, 0 }, { 0, 0, 0, 0.8, 0.2 }, { 0, 0, 0, 0, 1 } };
+long double B[N][M];
+long double B_0[N][M] = { { 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000 },
+{ 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000 },
+{ 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000 },
+{ 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000 },
+{ 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000, 0.03125000 } };
+
+
+
+
+void loadCodebook()
+{
+	string path = "./write/LBG_log.txt";
+	string line;
+	double temp;
+	ifstream codebookfile;
+	codebookfile.open(path);
+	int label = 0;
+	while (!codebookfile.eof())
+	{
+		label = label + 1;
+		getline(codebookfile, line);
+		stringstream ss(line);
+		Codebook var_temp;
+		int i = 0;
+		while (ss >> temp)
+		{
+			var_temp.ci[i] = temp;
+			i = i + 1;
+		}
+		var_temp.index = label;									 // initially all vectors assigned to cluster-1
+		codebook.push_back(var_temp);						 // Stores all cesptral words
+	}
+	codebookfile.close();
+}
+
+
+void dc_norm()
+{
+	int i;
+	size = temp_input.size();				// Length of input speech signal
+	ofstream normalize;
+	normalize.open("normalized_file.txt");
+
+	std::fstream silent_file("silence.txt", std::ios_base::in);
+
+	int a;
+	double silence_sum = 0, silence_count = 0, dc_shift;
+	while (silent_file >> a)
+	{
+		silence_sum = silence_sum + a;
+		silence_count = silence_count + 1;
+
+	}
+	dc_shift = silence_sum / silence_count; //dc shift calculation
+	//cout << "DC shift is :" << dc_shift << endl;
+	silent_file.close();
+	silent_file.clear();
+
+	for (i = 0; i<size; i++)
+	{
+		temp_input[i] = temp_input[i] - dc_shift;
+		// Mean adjustment to remove DC offset from the given speech signal 		
+	}
+
+	// Mean adjustment and normalization of "infile" vector
+	double max_val = *max_element(temp_input.begin(), temp_input.end());
+	double min_val = *min_element(temp_input.begin(), temp_input.end());
+	max_val = abs(max_val); min_val = abs(min_val);
+	if (min_val > max_val)
+		max_val = min_val;
+	for (i = 0; i < size; i++)
+	{
+		temp_input[i] = temp_input[i] * 5000 / max_val;
+		normalize << temp_input[i] << endl;
+
+	}
+
+	normalize.close();
+
+}
+
+void crop(){
+	std::fstream normalized_file("normalized_file.txt", std::ios_base::in);
+	float c, sum;
+	int count1 = 0, count2 = 0, i;
+	int flag = 0;
+	int zcr;
+	bool initial_postion = false;
+	double info_start = 0, info_content = 0, start_ptr = 0, end_ptr = 0;
+
+	while (!normalized_file.eof()){
+
+		count1 = 0;
+		sum = 0;
+		zcr = 0;
+		while (count1<100 && !normalized_file.eof()){
+			normalized_file >> c;
+			//ZCR calculation
+			if (initial_postion && c < 0)
+			{
+				zcr++;
+				initial_postion = false;
+			}
+			else if (!initial_postion && c>0){
+				zcr++;
+				initial_postion = true;
+			}
+
+			sum = sum + abs(c);
+			count1++;
+			count2++;
+
+		}
+		sum = sum / count1;
+
+		if (flag == 1)
+		{
+			if (sum>350 || (sum<350 && zcr>25)) //if ZCR > 25 and sum of signals is less than 350 or only sum is more then extend the end marker
+			{
+				end_ptr = end_ptr + 100; //silence
+			}
+			else
+			{
+				if (info_content<(end_ptr - start_ptr))
+				{
+					info_content = end_ptr - start_ptr;
+					info_start = start_ptr; //voice part start marker
+				}
+			}
+		}
+		else{
+			if (sum>350) //if sum is greater for first frame (100 signal) shift the start marker to the end
+			{
+				flag = 1;
+				start_ptr = count2 - 1;
+			}
+			else //else set both start and end marker to en of the frame
+			{
+				start_ptr = start_ptr + 100;
+				end_ptr = start_ptr;
+			}
+		}
+
+	}
+	normalized_file.close();
+	normalized_file.clear();
+	ofstream cropped;
+	cropped.open("cropped_file.txt");
+	std::fstream input("normalized_file.txt", std::ios_base::in);
+
+	string line;
+	i = 0;
+	//cout << info_start << endl;
+	//cout << info_content << endl;
+	while (i<info_start)
+	{
+		getline(input, line);
+		i++;
+	}
+	while (i<(info_start + info_content))
+	{
+
+		input >> c;
+		cropped << c << endl;
+		i++;
+	}
+
+	cropped.close();
+	input.close();
+}
+
+void autocorelation(vector<double> &voiceSeg)
+{
+	long int m, n, segLen = window_size;
+	vector <double> tempArr;
+
+	for (n = 0; n<segLen; n++)
+		tempArr.push_back(voiceSeg[segLen - 1 - n]);
+	// windowed voiced speech in reverse order
+	corr_size = segLen + segLen - 1;
+	for (n = 0; n<corr_size; n++)
+	{
+		double temp = 0;
+		for (m = 0; m<segLen; m++)
+		{
+			if (n - m >= 0 && n - m < segLen)
+			{
+				temp = temp + voiceSeg[n - m] * tempArr[m];
+			}
+		}
+		autoCorr.push_back(temp);
+	}
+
+	for (n = 0; n <= P; n++)
+	{
+		R.push_back(autoCorr[segLen - 1 + n]);
+		// autoCorr[segLen-1] refer to the energy of the windows voiced signal R[0]  				
+	}
+	tempArr.clear();
+	autoCorr.clear();
+}
+
+void calculate_alpha_i()
+{
+	int i, j;
+	double K, E, temp;
+	double k[P];
+	for (i = 0; i<P; i++)
+	{
+		alpha[i] = 0;
+		k[i] = 0;
+	}
+
+	E = R[0];
+	for (i = 1; i <= P; i++)
+	{
+		temp = 0;
+		for (j = 1; j <= i - 1; j++)
+		{
+			temp = temp + alpha[j - 1] * R[i - j];
+		}
+		K = (R[i] - temp) / E;
+		k[i - 1] = K;
+		for (j = 1; j <= i - 1; j++)
+		{
+			k[j - 1] = alpha[j - 1] - K*alpha[i - j - 1];
+		}
+		for (j = 0; j<P; j++)
+		{
+			alpha[j] = k[j];
+		}
+		E = (1 - K*K) * E;
+	}
+}
+
+
+void calculate_c_i(ofstream &to_write)
+{
+	// It first computes LPC then from LPC it computes cepstral coefficients
+	int k = 0;
+	std::fstream cropped_file("cropped_file.txt", std::ios_base::in);
+	while (!cropped_file.eof()){
+		cropped_file >> temp_input[k];
+
+	}
+	long int i, m, n;
+	double temp, c_i[P];
+	int frameShift = window_size * 1 / 4;
+	vector <double> frame;
+	long int fileLen = temp_input.size();
+	int count = 0;
+	for (int i = 0; i < fileLen - window_size; i = i + frameShift)
+	{
+		for (n = 0; n<window_size; n++)
+		{
+			double win_val = 0.54 - 0.46 * cos(2 * 3.141*n / (window_size - 1));  //hamming window
+			frame.push_back(win_val * temp_input[i + n]);
+		}
+		autocorelation(frame);
+		if (R[0] < 100)
+		{
+			R.clear();
+			frame.clear();
+			continue;
+		}
+		count = count + 1;
+		double max_R = R[0];
+		for (n = 0; n < R.size(); n++)
+		{
+			R[n] = R[n] / max_R;			// Normalizing the autocorrelation values
+
+		}
+		calculate_alpha_i();
+		frame.clear();
+		R.clear();
+		// Calculate cepstral coefficints from LP coefficients
+		for (n = 1; n <= P; n++)
+		{
+			temp = 0;
+			for (m = 1; m <= n - 1; m++)
+			{
+				temp = temp + (m / n)*c_i[m - 1] * alpha[n - m - 1];
+			}
+			c_i[n - 1] = alpha[n - 1] + temp;
+			c_i[n - 1] = c_i[n - 1] * (1 + sin(3.141*(n - 1) / (P - 1))*P / 2);
+		}
+		for (n = 0; n<P; n++)
+		{
+			to_write << c_i[n] << " ";
+			//cout << c_i[n] << endl;
+		}
+		to_write << endl;
+	}
+
+}
+
+long double alphabetasolution()
+{
+	// Initialization
+	StateProbability P_O;
+	for (int i = 0; i < N; i++)
+	{
+		int indx = ObservationSeq[0] - 1;
+		P_O.alpha[i] = pi[i] * B[i][indx];
+		P_O.beta[i] = 1;
+		P_O.gamma[i] = 0;
+	}
+	alpha_beta.push_back(P_O);
+
+	// Induction	
+	int length, k;
+	if (ObservationSeq.size() <= T)
+		length = ObservationSeq.size();
+	else
+		length = T + 1;
+
+
+	for (k = 1; k < length; k++)
+	{
+		// Forward probability	
+		for (int j = 0; j < N; j++)
+		{
+			long double temp_a = 0;
+			for (int i = 0; i<N; i++)
+			{
+				temp_a = temp_a + alpha_beta[k - 1].alpha[i] * A[i][j];
+			}
+			int indx = ObservationSeq[k] - 1;
+			P_O.alpha[j] = temp_a * B[j][indx];
+		}
+
+		// Backward probability
+		int indx = ObservationSeq[length - k] - 1;
+		for (int i = 0; i < N; i++)
+		{
+			long double temp_b = 0;
+			for (int j = 0; j<N; j++)
+			{
+				temp_b = temp_b + alpha_beta[k - 1].beta[j] * A[i][j] * B[j][indx];
+			}
+			P_O.beta[i] = temp_b;
+			P_O.gamma[i] = 0;
+		}
+		alpha_beta.push_back(P_O);
+	}
+
+	// //The termintion step
+	long double prob1 = 0, prob2 = 0;
+	int temp = ObservationSeq[0] - 1;
+	for (int i = 0; i < N; i++)
+	{
+		prob1 = prob1 + alpha_beta[k - 1].alpha[i];
+		prob2 = prob2 + alpha_beta[k - 1].beta[i] * B[i][temp] * pi[i];
+	}
+	//cout << "\n\nP(O|lambda) is :" << prob1 << endl;;
+	return prob1;
+}
+
+void zetasolution3()
+{
+	Zeta zeta_temp;
+	int length;
+	if (ObservationSeq.size() <= T)
+		length = ObservationSeq.size();
+	else
+		length = T + 1;
+	for (int t = 1; t < length; t++)
+	{
+		long double temp_sum = 0;
+		for (int i = 0; i < N; i++)
+		{
+			int indx = ObservationSeq[t] - 1;
+			for (int j = 0; j < N; j++)
+			{								// Beta values are stored in alpha_beta[].betaVal in a reverse order i.e, T,T-1,T-2,.......2,1															
+				zeta_temp.val[i][j] = alpha_beta[t - 1].alpha[i] * A[i][j] * B[j][indx] * alpha_beta[length - t].beta[j];
+				temp_sum = temp_sum + zeta_temp.val[i][j];
+			}
+		}
+
+		for (int i = 0; i < N; i++)
+		{
+			for (int j = 0; j < N; j++)
+			{
+				zeta_temp.val[i][j] = zeta_temp.val[i][j] / temp_sum;
+			}
+		}
+		zeta.push_back(zeta_temp);
+	}
+}
+
+void ReEstimation()
+{
+	vector <StateProbability> gama;
+
+	int length;
+	if (ObservationSeq.size() <= T)
+		length = ObservationSeq.size();
+	else
+		length = T + 1;
+
+	for (int t = 0; t < length - 1; t++)
+	{
+		StateProbability tempGama;
+		for (int i = 0; i < N; i++)
+		{
+			long double temp = 0;
+			for (int j = 0; j < N; j++)
+			{
+				temp = temp + zeta[t].val[i][j];
+			}
+			tempGama.gamma[i] = temp;
+			tempGama.alpha[i] = 0;
+			tempGama.beta[i] = 0;
+			if (t == 0)
+			{
+				pi[i] = temp;
+				//cout <<pi[i]<<endl;
+			}
+		}
+		gama.push_back(tempGama);
+	}
+
+	//	New transition matrix
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+		{
+			long double numerator = 0, denominator = 0;
+			for (int t = 0; t < length - 1; t++)
+			{
+				numerator = numerator + zeta[t].val[i][j];
+				denominator = denominator + gama[t].gamma[i];
+			}
+			A[i][j] = numerator / denominator;
+
+		}
+
+	}
+
+	//New observation model
+	for (int j = 0; j < N; j++)
+	{
+		for (int k = 0; k < M; k++)
+		{
+			long double numerator = 0, denominator = 0;
+
+			for (int t = 0; t < length - 1; t++)
+			{
+				int indx = ObservationSeq[t] - 1;
+				if (k == indx)
+					numerator = numerator + gama[t].gamma[j];
+				denominator = denominator + gama[t].gamma[j];
+			}
+			B[j][k] = numerator / denominator;
+
+
+		}
+
+	}
+	gama.clear();
+
+
+	for (int i = 0; i <N; i++)
+	{
+		long double colSum = 0;
+		long double tempMax = 0, substract = colSum - 1;
+
+		for (int j = 0; j < M; j++)
+		{
+			colSum = colSum + B[i][j];
+		}
+
+
+		if (substract > 0)
+		{
+			int maxIndex = 0;
+			for (int j = 0; j < M; j++)
+			{
+				if (B[i][j] > tempMax)
+				{
+					tempMax = B[i][j];
+					maxIndex = j;
+				}
+			}
+			B[i][maxIndex] = B[i][maxIndex] - substract;
+			cout << "modifying B row " << i << " col " << maxIndex << " val " << B[i][maxIndex] << endl;
+		}
+
+
+
+	}
+}
+
+
+void buildHMM(){
+	double temp;
+	loadCodebook();
+	vector <HMMmodel> HMM1;
+	vector <HMMmodel> HMM2;
+	HMMmodel modelTemp;
+	ostringstream ObservationSeq_string;
+	ObservationSeq_string << "./write/observationSeq.txt";
+	string ObservationSeq_filename = ObservationSeq_string.str();
+	ofstream ObservationSeq_objct;
+	ObservationSeq_objct.open(ObservationSeq_filename);
+
+
+	for (int iteration = 1; iteration <= 1; iteration++)
+	{
+		cout << "================= This is iteration " << iteration << " =================" << endl << endl;
+
+		for (int i = 0; i<10; i++)
+		{
+			vector <HMMmodel> storeHMM;
+			ObservationSeq_objct << "Number " << i << endl;
+
+			for (int j = 1; j <= no_of_training_data; j++)
+			{
+
+				cout << "Reading training digit " << i << " file " << j << endl;
+				ostringstream in_name;
+				in_name << "./digit_train/" << i << "/" << j << ".txt";
+				string in_filename = in_name.str();
+				ifstream infile_obj;
+				infile_obj.open(in_filename);
+				while (!infile_obj.eof())
+				{
+					infile_obj >> temp;
+					my_input.push_back(temp);
+				}
+				infile_obj.close();			// load speech training sample in vector "infile"				
+				dc_norm();				// DC shift, Normalization on the signal		
+				ObservationSeq_objct << "file= " << j << " :->"; //setprecision(2)
+				crop();
+				calculate_c_i(ObservationSeq_objct);			// calculate LPC and cepstral coefficients													
+				ObservationSeq_objct << endl;
+				if (iteration == 1)
+				{
+					for (int n = 0; n<N; n++)
+					{
+						pi[n] = pi_0[n];
+						for (int m = 0; m<N; m++)
+							A[n][m] = A_0[n][m];
+						for (int m = 0; m<M; m++)
+							B[n][m] = B_0[n][m];
+					}
+				}
+				else
+				{
+					for (int n = 0; n<N; n++)
+					{
+						pi[n] = HMM1[i].pi[n];
+						for (int m = 0; m<N; m++)
+							A[n][m] = HMM1[i].A[n][m];
+						for (int m = 0; m<M; m++)
+							B[n][m] = HMM1[i].B[n][m];
+					}
+				}
+
+
+				long double prob_old;
+				long int count = 0;
+				while (1)
+				{
+					cout << "		*****************" << endl;
+					long double prob_new = alphabetasolution();
+					zetasolution3();
+					ReEstimation();
+					alpha_beta.clear();
+					zeta.clear();
+
+					if (count == 0)
+					{
+						prob_old = prob_new;
+						count = count + 1;
+					}
+					else
+					{
+						//If less than the threshold then break (divided by zero avoid)
+						if ((prob_new - prob_old) * 100 / prob_old < 10e-5)
+						{
+							break;
+						}
+						prob_old = prob_new;
+						count = count + 1;
+					}
+				}
+				my_input.clear();
+				ObservationSeq.clear();
+				for (int n = 0; n< N; n++)
+				{
+					modelTemp.pi[n] = pi[n];
+					for (int m = 0; m<N; m++)
+						modelTemp.A[n][m] = A[n][m];
+					for (int m = 0; m<M; m++)
+						modelTemp.B[n][m] = B[n][m];
+				}
+				storeHMM.push_back(modelTemp);
+			}
+			//calculating average of the model for all files of each digit
+			for (int n = 0; n<N; n++)
+			{
+				modelTemp.pi[n] = 0;
+				for (int l = 0; l<no_of_training_data; l++)
+					modelTemp.pi[n] = modelTemp.pi[n] + storeHMM[l].pi[n];
+				modelTemp.pi[n] = modelTemp.pi[n] / no_of_training_data;
+
+				for (int m = 0; m<N; m++)
+				{
+					modelTemp.A[n][m] = 0;
+					for (int l = 0; l<no_of_training_data; l++)
+						modelTemp.A[n][m] = modelTemp.A[n][m] + storeHMM[l].A[n][m];
+					modelTemp.A[n][m] = modelTemp.A[n][m] / no_of_training_data;
+				}
+				for (int m = 0; m<M; m++)
+				{
+					modelTemp.B[n][m] = 0;
+					for (int l = 0; l<no_of_training_data; l++)
+						modelTemp.B[n][m] = modelTemp.B[n][m] + storeHMM[l].B[n][m];
+					modelTemp.B[n][m] = modelTemp.B[n][m] / no_of_training_data;
+				}
+			}
+
+			HMM2.push_back(modelTemp);
+			storeHMM.clear();
+		}
+	}
+	cout << " Model building done !!!!!!! Hurraaah " << endl;
+	ObservationSeq_objct.close();
+
+	ostringstream out_file_path;
+	out_file_path << "./write/finalHMM.txt";
+	string finalhmm = out_file_path.str();
+	ofstream hmm_objects;
+	hmm_objects.open(finalhmm);
+
+	for (int i = 0; i < 10; i++)
+	{
+		ostringstream out_file_path2;
+		out_file_path2 << "./write/trainedHMM/" << i << ".txt";
+		string trainedhmm = out_file_path2.str();
+		ofstream trainedhmm_obj;
+		trainedhmm_obj.open(trainedhmm);
+
+		hmm_objects << "Pi Values for " << i << endl;
+		for (int n = 0; n< N; n++)
+		{
+			hmm_objects << scientific << setprecision(20) << HMM2[i].pi[n] << " ";
+			trainedhmm_obj << scientific << setprecision(20) << HMM2[i].pi[n] << endl;
+		}
+		hmm_objects << endl << "A Matrix for " << i << endl;
+		for (int n = 0; n < N; n++)
+		{
+			for (int m = 0; m < N; m++)
+			{
+				hmm_objects << scientific << setprecision(20) << HMM2[i].A[n][m] << " ";
+				trainedhmm_obj << scientific << setprecision(20) << HMM2[i].A[n][m] << endl;
+			}
+			hmm_objects << endl;
+		}
+		hmm_objects << endl << "B Matrix for " << i << endl;
+		for (int n = 0; n < N; n++)
+		{
+			for (int m = 0; m < M; m++)
+			{
+				hmm_objects << scientific << setprecision(20) << HMM2[i].B[n][m] << " ";
+				trainedhmm_obj << scientific << setprecision(20) << HMM2[i].B[n][m] << endl;
+			}
+			hmm_objects << endl;
+		}
+		hmm_objects << endl;
+		trainedhmm_obj.close();
+	}
+	hmm_objects.close();
+
+
+
+	return;
+}
