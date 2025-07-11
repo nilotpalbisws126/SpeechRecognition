@@ -1,0 +1,22 @@
+﻿Build started 11/20/2018 2:08:48 PM.
+     1>Project "C:\Users\Neil\Downloads\176101101_DigitRecognition\DigitRecognitionAssignment\DigitRecognitionAssignment\DigitRecognitionAssignment.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\DigitRecognitionAssignment.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt feature_ext.cpp
+         feature_ext.cpp
+     1>c:\users\neil\downloads\176101101_digitrecognition\digitrecognitionassignment\digitrecognitionassignment\feature_ext.cpp(427): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\neil\downloads\176101101_digitrecognition\digitrecognitionassignment\digitrecognitionassignment\feature_ext.cpp(410): warning C4101: 'i' : unreferenced local variable
+     1>c:\users\neil\downloads\176101101_digitrecognition\digitrecognitionassignment\digitrecognitionassignment\feature_ext.cpp(726): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\neil\downloads\176101101_digitrecognition\digitrecognitionassignment\digitrecognitionassignment\feature_ext.cpp(781): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\neil\downloads\176101101_digitrecognition\digitrecognitionassignment\digitrecognitionassignment\feature_ext.cpp(759): warning C4101: 'i' : unreferenced local variable
+     1>c:\users\neil\downloads\176101101_digitrecognition\digitrecognitionassignment\digitrecognitionassignment\feature_ext.cpp(1072): warning C4018: '<' : signed/unsigned mismatch
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Neil\Downloads\176101101_DigitRecognition\DigitRecognitionAssignment\Debug\DigitRecognitionAssignment.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Neil\Downloads\176101101_DigitRecognition\DigitRecognitionAssignment\Debug\DigitRecognitionAssignment.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Neil\Downloads\176101101_DigitRecognition\DigitRecognitionAssignment\Debug\DigitRecognitionAssignment.lib" /MACHINE:X86 Debug\DigitRecognitionAssignment.obj
+         Debug\feature_ext.obj
+         Debug\make_codebook.obj
+         Debug\stdafx.obj
+         DigitRecognitionAssignment.vcxproj -> C:\Users\Neil\Downloads\176101101_DigitRecognition\DigitRecognitionAssignment\Debug\DigitRecognitionAssignment.exe
+     1>Done Building Project "C:\Users\Neil\Downloads\176101101_DigitRecognition\DigitRecognitionAssignment\DigitRecognitionAssignment\DigitRecognitionAssignment.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:02.67

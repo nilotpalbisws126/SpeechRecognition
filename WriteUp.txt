@@ -1,0 +1,29 @@
+******************************************
+Digit Recognition System
+******************************************
+
+Submitted By: Nilotpal Biswas
+Roll: 176101101
+
+*******************************************
+You have to follow these steps to run this module
+
+Step 1: Goto DigitRecognitionAssignment folder and run DigitRecognitionAssignment
+Step 2: Choose option 1 for extracting feature from the train data, making a codebook and building the model.
+Step 3: Press 2 for testing your live data. Recording module will appear and you have to utter any digit (0 to 9)
+Step 4: It will predict what you said .
+
+**************** File info****************
+
+feature_ext.h has 3 main funtions train(), buildHMM() and testing()
+Where train() reads the training digit data and writes a file called ciFeatures.txt after calculating capstrel coefficients.
+buildHMM() takes the Ci values from codebook and makes observation sequence and also writes observationSeq.txt file under write folder and also it 
+writes the filnal HMM model for each digit under /write/HMM_training folder
+testing() takes the voice input and predicts what is said calculating the probability for each digit.
+
+
+make_codebook.h has lbg() function which makes a codebook from the Ci values and writes a file LBG_log.txt under write folder.
+
+
+
+
